@@ -1,13 +1,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from collections import defaultdict
 import copy
 import json
 import os
 from os.path import exists, join, isdir
 from dataclasses import dataclass, field
-import sys
 from typing import Optional, Dict, Sequence
 import numpy as np
 from tqdm import tqdm
@@ -35,8 +33,8 @@ from peft import (
 )
 from peft.tuners.lora import LoraLayer
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
-from auto_gptq.utils.peft_utils import get_peft_model, GPTQLoraConfig
-from auto_gptq import AutoGPTQForCausalLM
+from peft import get_peft_model
+from auto_gptq.utils.peft_utils import GPTQLoraConfig
 from auto_gptq.nn_modules.qlinear import GeneralQuantLinear
 
 torch.backends.cuda.matmul.allow_tf32 = True

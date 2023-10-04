@@ -1,0 +1,5 @@
+auto-gptq
+bitsandbytes
+evaluate
+optimum
+scipy
