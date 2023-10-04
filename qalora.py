@@ -35,7 +35,7 @@ from peft import (
 )
 from peft.tuners.lora import LoraLayer
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
-from auto_gptq.utils.peft_utils import get_gptq_peft_model, GPTQLoraConfig
+from auto_gptq.utils.peft_utils import get_peft_model, GPTQLoraConfig
 from auto_gptq import AutoGPTQForCausalLM
 from auto_gptq.nn_modules.qlinear import GeneralQuantLinear
 
@@ -279,16 +279,12 @@ def get_accelerate_model(args, checkpoint_dir):
     if args.full_finetune: assert args.bits in [16, 32]
 
     print(f'loading base model {args.model_path}...')
-    model = AutoGPTQForCausalLM.from_quantized(
+    model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
         device_map='auto',
         max_memory=max_memory,
         trust_remote_code=args.trust_remote_code,
-        inject_fused_attention = True,
-        inject_fused_mlp = False,
-        use_triton=True,
-        warmup_triton=False,
-        trainable=True
+        use_safetensors=True,
     )
     model.model.quantize_config = model.quantize_config
     model.train()
@@ -321,7 +317,7 @@ def get_accelerate_model(args, checkpoint_dir):
                     print(name, p.sum())
         else:
             print(f'adding LoRA modules...')
-            model = get_gptq_peft_model(model, config, auto_find_all_linears=True, train_mode=True)
+            model = get_peft_model(model, config)
 
     if args.gradient_checkpointing:
         if hasattr(model, "enable_input_require_grads"):
@@ -342,6 +338,8 @@ def get_accelerate_model(args, checkpoint_dir):
             if hasattr(module, 'weight'):
                 if args.bf16 and module.weight.dtype == torch.float32:
                     module = module.to(torch.bfloat16)
+                if not args.bf16 and not args.fp16 and module.weight.dtype != torch.float32:
+                    module = module.to(torch.float32)
     return model
 
 def print_trainable_parameters(args, model):
